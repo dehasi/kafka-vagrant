@@ -84,3 +84,4 @@ ff02::2 ip6-allrouters
 
 
 == Try to run again and get logs
+https://redpanda.com/guides/kafka-tutorial/kafka-without-zookeeper
