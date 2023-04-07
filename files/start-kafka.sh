@@ -1,17 +1,5 @@
 # sync files
-set -xue
-sudo su vagrant && cd ~
 
-echo $(pwd)
-
-PATH="$PATH:/opt/kafka/bin"
-echo 'PATH="$PATH:/opt/kafka/bin"' >> ~/.bashrc
-
-KAFKA_CLUSTER_ID="$(/opt/kafka/bin/kafka-storage.sh random-uuid)"
-
-echo KAFKA_CLUSTER_ID=$KAFKA_CLUSTER_ID  >> ~/.bashrc
-
-kafka-storage.sh format -t $KAFKA_CLUSTER_ID -c /opt/kafka/config/kraft/server.properties
 
 kafka-server-start.sh -daemon /opt/kafka/config/kraft/server.properties
 # update node id
