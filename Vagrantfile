@@ -27,6 +27,7 @@ Vagrant.configure("2") do |config|
      kafka.vm.provision "delete KAFKA from localhost", type: "shell", inline: " sed -i 's/127.*kafka.*/#&/' /etc/hosts"
      kafka.vm.provision "set NODE_ID", type: "shell", inline: "sed -i 's/NODE_ID/1/g' /opt/kafka/config/kraft/server.properties"
      kafka.vm.provision "set KAFKA_HOST", type: "shell", inline: "sed -i 's/KAFKA_HOST/kafka1/g' /opt/kafka/config/kraft/server.properties"
+     kafka.vm.provision "set KAFKA_CLUSTER_ID", type: "shell", path: "scripts/5-run-kafka-storage.sh"
      # kafka.vm.provision "run kafka", type: "shell", path: "scripts/nn-start-kafka.sh"
   end
 
@@ -36,6 +37,7 @@ Vagrant.configure("2") do |config|
      kafka.vm.provision "delete KAFKA from localhost", type: "shell", inline: " sed -i 's/127.*kafka.*/#&/' /etc/hosts"
      kafka.vm.provision "set NODE_ID", type: "shell", inline: "sed -i 's/NODE_ID/2/g' /opt/kafka/config/kraft/server.properties"
      kafka.vm.provision "set KAFKA_HOST", type: "shell", inline: "sed -i 's/KAFKA_HOST/kafka2/g' /opt/kafka/config/kraft/server.properties"
+     kafka.vm.provision "set KAFKA_CLUSTER_ID", type: "shell", path: "scripts/5-run-kafka-storage.sh"
      # kafka.vm.provision "run kafka", type: "shell", path: "scripts/nn-start-kafka.sh"
   end
 
@@ -45,6 +47,7 @@ Vagrant.configure("2") do |config|
      kafka.vm.provision "delete KAFKA from localhost", type: "shell", inline: " sed -i 's/127.*kafka.*/#&/' /etc/hosts"
      kafka.vm.provision "set NODE_ID", type: "shell", inline: "sed -i 's/NODE_ID/3/g' /opt/kafka/config/kraft/server.properties"
      kafka.vm.provision "set KAFKA_HOST", type: "shell", inline: "sed -i 's/KAFKA_HOST/kafka3/g' /opt/kafka/config/kraft/server.properties"
+     kafka.vm.provision "set KAFKA_CLUSTER_ID", type: "shell", path: "scripts/5-run-kafka-storage.sh"
      # kafka.vm.provision "run kafka", type: "shell", path: "scripts/nn-start-kafka.sh"
   end
 end

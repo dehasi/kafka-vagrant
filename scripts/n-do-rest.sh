@@ -12,3 +12,7 @@ export KAFKA_CLUSTER_ID="$(/opt/kafka/bin/kafka-storage.sh random-uuid)"
 #sudo chown root:root  /etc/init.d/kafka
 #sudo update-rc.d kafka defaults
 # sudo service kafka start
+
+* change ownership to root: `chown root:root /etc/init.d/kafka`
+* install service: `sudo update-rc.d kafka defaults`
+* start kafka: `sudo servivce kafka start`
