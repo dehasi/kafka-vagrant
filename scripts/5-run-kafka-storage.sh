@@ -1,5 +1,5 @@
 set -xue
-sudo su vagrant && cd ~
+sudo su vagrant && cd ~ # it's still root
 
 echo $(pwd)
 
