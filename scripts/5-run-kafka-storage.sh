@@ -4,7 +4,7 @@ sudo su vagrant && cd ~
 echo $(pwd)
 
 PATH="$PATH:/opt/kafka/bin"
-echo 'PATH="$PATH:/opt/kafka/bin"' >> ~/.bashrc
+echo 'PATH="$PATH:/opt/kafka/bin"' >> /etc/profile
 
 KAFKA_CLUSTER_ID="$(/opt/kafka/bin/kafka-storage.sh random-uuid)"
 
