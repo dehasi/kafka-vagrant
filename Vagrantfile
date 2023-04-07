@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: "files/kraft-server.properties", destination: "/tmp/server.properties"
   config.vm.provision "file", source: "files/kafka-init.d.sh", destination: "/tmp/kafka"
   config.vm.provision "file", source: "files/start-kafka.sh", destination: "/tmp/start-kafka.sh"
-  config.vm.provision "do rest", :type => "shell", :path => "scripts/n-do-rest.sh"
+  config.vm.provision "sync files", :type => "shell", :path => "scripts/4-sync-files.sh"
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 2*GB
