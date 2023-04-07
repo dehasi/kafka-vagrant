@@ -1,0 +1,83 @@
+= Brokers can't connect to each other
+
+== Hypothese #1: Broker fails before others start
+
+`Broker1` starts. Tries to connect to others few times, then shutdown.
+When `Broker2` started, `Broker1` had already been shutdown.
+
+*Evidence:* the first message "Connection to node could not be established." is at `20:13:20`.
+Graceful shutdown in at `20:14:24`. One minute might not be enough to start other brokers.
+
+.tail -f  /opt/kafka/logs/kafkaServer.out
+[source, logs]
+----
+[2023-04-03 20:13:20,632] INFO [RaftManager nodeId=2] Node 1 disconnected. (org.apache.kafka.clients.NetworkClient)
+[2023-04-03 20:13:20,634] WARN [RaftManager nodeId=2] Connection to node 1 (kafka1/10.0.0.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-03 20:13:20,634] INFO [RaftManager nodeId=2] Node 3 disconnected. (org.apache.kafka.clients.NetworkClient)
+[2023-04-03 20:13:20,635] WARN [RaftManager nodeId=2] Connection to node 3 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-03 20:13:20,704] INFO [RaftManager nodeId=2] Node 1 disconnected. (org.apache.kafka.clients.NetworkClient)
+----
+
+----
+[2023-04-03 20:14:24,017] WARN [RaftManager nodeId=2] Connection to node 1 (kafka1/10.0.0.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-03 20:14:24,189] INFO [RaftManager nodeId=2] Node 3 disconnected. (org.apache.kafka.clients.NetworkClient)
+[2023-04-03 20:14:24,189] WARN [RaftManager nodeId=2] Connection to node 3 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-03 20:14:24,323] WARN [RaftManager nodeId=2] Graceful shutdown timed out after 5000ms (org.apache.kafka.raft.KafkaRaftClient)
+[2023-04-03 20:14:24,325] ERROR [kafka-raft-io-thread]: Graceful shutdown of RaftClient failed (kafka.raft.KafkaRaftManager$RaftIoThread)
+java.util.concurrent.TimeoutException: Timeout expired before graceful shutdown completed
+        at org.apache.kafka.raft.KafkaRaftClient$GracefulShutdown.failWithTimeout(KafkaRaftClient.java:2416)
+        at org.apache.kafka.raft.KafkaRaftClient.maybeCompleteShutdown(KafkaRaftClient.java:2163)
+        at org.apache.kafka.raft.KafkaRaftClient.poll(KafkaRaftClient.java:2230)
+        at kafka.raft.KafkaRaftManager$RaftIoThread.doWork(RaftManager.scala:61)
+        at kafka.utils.ShutdownableThread.run(ShutdownableThread.scala:96)
+[2023-04-03 20:14:24,326] INFO [kafka-raft-io-thread]: Stopped (kafka.raft.KafkaRaftManager$RaftIoThread)
+[2023-04-03 20:14:24,326] INFO [kafka-raft-io-thread]: Shutdown completed (kafka.raft.KafkaRaftManager$RaftIoThread)
+[2023-04-03 20:14:24,336] INFO [kafka-raft-outbound-request-thread]: Shutting down (kafka.raft.RaftSendThread)
+[2023-04-03 20:14:24,337] INFO [kafka-raft-outbound-request-thread]: Stopped (kafka.raft.RaftSendThread)
+[2023-04-03 20:14:24,337] INFO [kafka-raft-outbound-request-thread]: Shutdown completed (kafka.raft.RaftSendThread)
+----
+
+*Possible fix:* increase wait timeout.
+
+
+== Hypothese #2: Usage of wrong ports.
+Broker and controller use the same port. Let's try different.
+
+Try to use `19092 for controllers 9092 for brokers`
+
+
+AGAIN
+
+
+----
+root@kafka2:/home/vagrant# kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka2:9092
+[2023-04-04 19:34:20,017] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/127.0.2.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-04 19:34:20,223] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/10.0.0.2:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-04 19:34:20,426] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/127.0.2.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-04 19:34:20,934] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/10.0.0.2:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-04 19:34:21,747] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/127.0.2.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-04 19:34:22,861] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/10.0.0.2:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+^C^Croot@kafka2:/home/vagrant# ^C
+----
+
+
+
+Try to clean `vi /etc/hosts`
+
+----
+127.0.0.1       localhost
+127.0.1.1       vagrant.vm      vagrant
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+10.0.0.1        kafka1
+10.0.0.2        kafka2
+10.0.0.3        kafka3
+
+----
+
+----
+[2023-04-04 19:43:01,445] ERROR [RaftManager nodeId=2] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=855, data=VoteResponseData(errorCode=104, topics=[]), sourceId=1) (org.apache.kafka.raft.KafkaRaftClient)
+----
