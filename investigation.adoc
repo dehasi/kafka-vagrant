@@ -1,5 +1,7 @@
 = Brokers can't connect to each other
 
+*Instruction:* https://redpanda.com/guides/kafka-tutorial/kafka-without-zookeeper
+
 == Hypothese #1: Broker fails before others start
 
 `Broker1` starts. Tries to connect to others few times, then shutdown.
@@ -39,6 +41,7 @@ java.util.concurrent.TimeoutException: Timeout expired before graceful shutdown 
 
 *Possible fix:* increase wait timeout.
 
+Tried to run all withing one minute. didn't help.
 
 == Hypothese #2: Usage of wrong ports.
 Broker and controller use the same port. Let's try different.
@@ -47,7 +50,6 @@ Try to use `19092 for controllers 9092 for brokers`
 
 
 AGAIN
-
 
 ----
 root@kafka2:/home/vagrant# kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka2:9092
@@ -75,13 +77,44 @@ ff02::2 ip6-allrouters
 10.0.0.1        kafka1
 10.0.0.2        kafka2
 10.0.0.3        kafka3
-
 ----
 
 ----
 [2023-04-04 19:43:01,445] ERROR [RaftManager nodeId=2] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=855, data=VoteResponseData(errorCode=104, topics=[]), sourceId=1) (org.apache.kafka.raft.KafkaRaftClient)
 ----
 
+Didn't help
 
-== Try to run again and get logs
-https://redpanda.com/guides/kafka-tutorial/kafka-without-zookeeper
+== Try one node (success)
+
+I am able to run one node cluster
+
+----
+vagrant@kafka1:~$ sudo service kafka status
+● kafka.service
+   Loaded: loaded (/etc/init.d/kafka; bad; vendor preset: enabled)
+   Active: active (running) since Fri 2023-04-07 21:30:40 UTC; 1min 33s ago
+     Docs: man:systemd-sysv-generator(8)
+  Process: 18701 ExecStart=/etc/init.d/kafka start (code=exited, status=0/SUCCESS)
+    Tasks: 89
+   Memory: 341.7M
+      CPU: 8.125s
+   CGroup: /system.slice/kafka.service
+           └─19042 java -Xmx1G -Xms1G -server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -XX:MaxInlineLevel=15 -Djava.awt.headless=true -Xloggc:/opt/kafka/bin/../logs/kafkaS
+
+Apr 07 21:30:40 kafka1 systemd[1]: Starting kafka.service...
+Apr 07 21:30:40 kafka1 kafka[18701]: Starting kafka
+Apr 07 21:30:40 kafka1 systemd[1]: Started kafka.service.
+vagrant@kafka1:~$ kafka-topics.sh --bootstrap-server kafka1:9092 --list
+
+vagrant@kafka1:~$ kafka-topics.sh --create --topic kraft-test --partitions 1 --replication-factor 1 --bootstrap-server kafka1:9092
+Created topic kraft-test.
+vagrant@kafka1:~$ kafka-topics.sh --bootstrap-server kafka1:9092 --list
+kraft-test
+----
+
+I use `19092` for controllers `9092` for brokers.
+
+== Hypothese #3: listeners are set incorrectly
+
+`listeners=`
