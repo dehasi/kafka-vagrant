@@ -81,3 +81,6 @@ ff02::2 ip6-allrouters
 ----
 [2023-04-04 19:43:01,445] ERROR [RaftManager nodeId=2] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=855, data=VoteResponseData(errorCode=104, topics=[]), sourceId=1) (org.apache.kafka.raft.KafkaRaftClient)
 ----
+
+
+== Try to run again and get logs
