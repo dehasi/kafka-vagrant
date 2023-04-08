@@ -2,6 +2,8 @@
 
 *Instruction:* https://redpanda.com/guides/kafka-tutorial/kafka-without-zookeeper
 
+check settings from here https://zhuanlan.zhihu.com/p/595020396
+
 == Hypothese #1: Broker fails before others start
 
 `Broker1` starts. Tries to connect to others few times, then shutdown.
