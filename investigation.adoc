@@ -45,7 +45,7 @@ java.util.concurrent.TimeoutException: Timeout expired before graceful shutdown 
 
 Tried to run all withing one minute. didn't help.
 
-== Hypothese #2: Usage of wrong ports.
+== Hypothese #2: Usage of wrong ports (yes).
 Broker and controller use the same port. Let's try different.
 
 Try to use `19092 for controllers 9092 for brokers`
@@ -85,7 +85,12 @@ ff02::2 ip6-allrouters
 [2023-04-04 19:43:01,445] ERROR [RaftManager nodeId=2] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=855, data=VoteResponseData(errorCode=104, topics=[]), sourceId=1) (org.apache.kafka.raft.KafkaRaftClient)
 ----
 
-Didn't help
+Helped a bit.
+
+First. `controller.quorum.voters` and `listeners=CONTROLLER` have to use the same port. It's used for KRaft.
+When I fixed it I started getting `INCONSISTENT_CLUSTER_ID`. Google says I have to perform
+`kafka-storage.sh format -t ${KAFKA_CLUSTER_ID} -c /opt/kafka/config/kraft/server.properties`. But I did.
+
 
 == Try one node (success)
 
@@ -115,17 +120,17 @@ vagrant@kafka1:~$ kafka-topics.sh --bootstrap-server kafka1:9092 --list
 kraft-test
 ----
 
-I use `19092` for controllers `9092` for brokers.
-
-== Hypothese #3: listeners are set incorrectly
-
-`listeners=`
+== Collect info
 
 === Logs were taken for further investigation
 ----
 $ vagrant scp kafka1:/opt/kafka/logs/ logs/kafka1/
 $ vagrant scp kafka2:/opt/kafka/logs/ logs/kafka2/
 $ vagrant scp kafka3:/opt/kafka/logs/ logs/kafka3/
+
+$  vagrant scp kafka1:/tmp/kraft-combined-logs/ logs/kafka1/
+$  vagrant scp kafka2:/tmp/kraft-combined-logs/ logs/kafka2/
+$  vagrant scp kafka3:/tmp/kraft-combined-logs/ logs/kafka3/
 ----
 
 ----
@@ -166,3 +171,7 @@ vagrant@kafka2:~$ echo $?
 
 
 
+----
+[2023-04-08 20:10:47,402] ERROR [RaftManager nodeId=3] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=2271, data=VoteResponseData(errorCode=104, topics=[]), sourceId=2) (org.apache.kafka.raft.KafkaRaftClient)
+[2023-04-08 20:10:47,403] ERROR [RaftManager nodeId=3] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=2270, data=VoteResponseData(errorCode=104, topics=[]), sourceId=1) (org.apache.kafka.raft.KafkaRaftClient)
+----
