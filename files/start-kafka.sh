@@ -12,6 +12,6 @@ kafka-server-start.sh -daemon /opt/kafka/config/kraft/server.properties
 #sudo update-rc.d kafka defaults
 # sudo service kafka start
 
-# kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092
+# kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
 # kafka-topics.sh --create --topic kraft-test --partitions 1 --replication-factor 1 --bootstrap-server kafka1:9092
 # kafka-topics.sh --bootstrap-server kafka1:9092 --list

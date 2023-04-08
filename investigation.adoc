@@ -120,3 +120,42 @@ I use `19092` for controllers `9092` for brokers.
 == Hypothese #3: listeners are set incorrectly
 
 `listeners=`
+
+=== Logs were taken for further investigation
+----
+$ vagrant scp kafka1:/opt/kafka/logs/ logs/kafka1/
+$ vagrant scp kafka2:/opt/kafka/logs/ logs/kafka2/
+$ vagrant scp kafka3:/opt/kafka/logs/ logs/kafka3/
+----
+
+=== I have access from one node to another
+
+I can connect to port `9092` and `19092`.
+
+----
+vagrant@kafka2:~$ ping kafka3
+PING kafka3 (10.0.0.3) 56(84) bytes of data.
+64 bytes from kafka3 (10.0.0.3): icmp_seq=1 ttl=64 time=0.469 ms
+64 bytes from kafka3 (10.0.0.3): icmp_seq=2 ttl=64 time=0.825 ms
+64 bytes from kafka3 (10.0.0.3): icmp_seq=3 ttl=64 time=1.04 ms
+64 bytes from kafka3 (10.0.0.3): icmp_seq=4 ttl=64 time=0.933 ms
+^C
+--- kafka3 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+rtt min/avg/max/mdev = 0.469/0.818/1.045/0.215 ms
+vagrant@kafka2:~$ nc  kafka3 9092
+sdsd
+^C
+vagrant@kafka2:~$ nc  kafka3 19092
+sdsf
+vagrant@kafka2:~$ nc  kafka3 19092
+ddfdf
+vagrant@kafka2:~$ echo $?
+0
+vagrant@kafka2:~$ nc  kafka3 9093
+vagrant@kafka2:~$ echo $?
+1
+----
+
+
+
