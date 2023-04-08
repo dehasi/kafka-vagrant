@@ -128,6 +128,13 @@ $ vagrant scp kafka2:/opt/kafka/logs/ logs/kafka2/
 $ vagrant scp kafka3:/opt/kafka/logs/ logs/kafka3/
 ----
 
+----
+
+kafka1: KAFKA_CLUSTER_ID=W_QGysAaT26FsylDkCdgnA
+kafka2: KAFKA_CLUSTER_ID=SybwVGfhSMua-nqbr9oFxw
+kafka3: KAFKA_CLUSTER_ID=1IhHW8KOTOeZKvDOdUqB8Q
+----
+
 === I have access from one node to another
 
 I can connect to port `9092` and `19092`.
