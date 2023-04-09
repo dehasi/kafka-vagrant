@@ -43,37 +43,20 @@ java.util.concurrent.TimeoutException: Timeout expired before graceful shutdown 
 [2023-04-03 20:14:24,337] INFO [kafka-raft-outbound-request-thread]: Shutdown completed (kafka.raft.RaftSendThread)
 ----
 
-*Possible fix:* increase wait timeout.
+*Possible fix:* increase wait timeout. Or run all within one minute.
 
-Tried to run all withing one minute. didn't help.
+*Result:* Didn't help.
 
-== Hypothese #2: Usage of wrong ports (yes).
-Broker and controller use the same port. Let's try different.
+== Hypothese #2: `/etc/hosts` (don't know)
 
-Try to use `19092 for controllers 9092 for brokers`
+`/etc/hosts` has two IPs for `kafkaN` domain name. Which can affect connecion
 
+*Evidence:*  I see both `(kafka1/10.0.0.1:9092)` and `(kafka1/127.0.0.1:9092)` in logs.
 
-AGAIN
-
-[source, logs]
-----
-root@kafka2:/home/vagrant# kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka2:9092
-[2023-04-04 19:34:20,017] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/127.0.2.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-04 19:34:20,223] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/10.0.0.2:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-04 19:34:20,426] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/127.0.2.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-04 19:34:20,934] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/10.0.0.2:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-04 19:34:21,747] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/127.0.2.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-04 19:34:22,861] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/10.0.0.2:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-^C^Croot@kafka2:/home/vagrant# ^C
-----
-
-
-
-Try to clean `vi /etc/hosts`
-
+.cat /etc/hosts
 ----
 127.0.0.1       localhost
-127.0.1.1       vagrant.vm      vagrant
+127.0.1.1       kafka1      vagrant
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback
@@ -84,13 +67,27 @@ ff02::2 ip6-allrouters
 10.0.0.3        kafka3
 ----
 
+*Possible fix:*
+[source, bash]
+----
+sed -i 's/127.*kafka.*/#&/' /etc/hosts
+----
+
+*Result:* Partially helped. No more `(kafka1/127.0.0.1:9092)` in logs, but the problem remains.
+
+== Hypothese #3: Usage of wrong ports (yes).
+
+Broker and controller use the same port. Let's try different.
+
+Try to use `19092` for controllers `9092` for brokers.
+
 ----
 [2023-04-04 19:43:01,445] ERROR [RaftManager nodeId=2] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=855, data=VoteResponseData(errorCode=104, topics=[]), sourceId=1) (org.apache.kafka.raft.KafkaRaftClient)
 ----
 
-Helped a bit.
+*Result:*  Helped a bit. I started to get a different error.
 
-First. `controller.quorum.voters` and `listeners=CONTROLLER` have to use the same port. It's used for KRaft.
+*Conclusion:* `controller.quorum.voters` and `listeners=CONTROLLER` have to use the same port. It's used for KRaft.
 When I fixed it I started getting `INCONSISTENT_CLUSTER_ID`. Google says I have to perform
 `kafka-storage.sh format -t ${KAFKA_CLUSTER_ID} -c /opt/kafka/config/kraft/server.properties`. But I did.
 
@@ -173,7 +170,7 @@ vagrant@kafka2:~$ echo $?
 ----
 
 
-== Hypothese #1: I have to use the same 'KAFKA_CLUSTER_ID' for all nodes (yes)
+== Hypothese #4: I have to use the same 'KAFKA_CLUSTER_ID' for all nodes (yes)
 
 I'm getting `INCONSISTENT_CLUSTER_ID`.
 
@@ -193,7 +190,7 @@ sudo echo "export KAFKA_CLUSTER_ID=${KAFKA_CLUSTER_ID}" >> /etc/profile
 kafka-storage.sh format -t ${KAFKA_CLUSTER_ID} -c /opt/kafka/config/kraft/server.properties
 ----
 
-It works.
+*Result:* It works.
 
 ----
 vagrant@kafka2:~$ kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
@@ -206,13 +203,8 @@ vagrant@kafka2:~$ kafka-topics.sh --bootstrap-server kafka1:9092 --list
 kraft-test
 vagrant@kafka2:~$ kafka-topics.sh --bootstrap-server kafka3:9092 --list
 [2023-04-09 13:18:04,886] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-09 13:18:04,993] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-09 13:18:05,097] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-09 13:18:05,302] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-09 13:18:05,709] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-09 13:18:06,439] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-[2023-04-09 13:18:07,456] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
-^C^Cvagrant@kafka2:~$ kafka-topics.sh --bootstrap-server kafka3:9092 --list
+
+vagrant@kafka2:~$ kafka-topics.sh --bootstrap-server kafka3:9092 --list
 kraft-test
 vagrant@kafka2:~$ kafka-topics.sh --create --topic kraft-test2 --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
 Created topic kraft-test2.
@@ -220,3 +212,29 @@ vagrant@kafka2:~$
 ----
 
 I got `Unable to replicate the partition 3 time(s):` the first time. I restarted kafka on `kafka3`. Topic `kraft-test2` is replicated for all 3 nodes.
+
+*Conclusion:* I have to use the same `KAFKA_CLUSTER_ID` across all nodes.
+
+
+== Things to check
+
+=== Use hostname in `listeners`
+
+Current `listeners` property is the following
+[source, properties]
+----
+listeners=PLAINTEXT://:9092,CONTROLLER://:19092
+----
+
+Try to use the exact host name
+[source, properties]
+----
+listeners=PLAINTEXT://KAFKA_HOST:9092,CONTROLLER://KAFKA_HOST:9092
+----
+
+That's why I have command to replace `KAFKA_HOST` with the actual host name
+
+[source, bash]
+----
+sed -i 's/KAFKA_HOST/kafka1/g' /opt/kafka/config/kraft/server.properties
+----
