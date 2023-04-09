@@ -23,6 +23,7 @@ Graceful shutdown in at `20:14:24`. One minute might not be enough to start othe
 [2023-04-03 20:13:20,704] INFO [RaftManager nodeId=2] Node 1 disconnected. (org.apache.kafka.clients.NetworkClient)
 ----
 
+[source, logs]
 ----
 [2023-04-03 20:14:24,017] WARN [RaftManager nodeId=2] Connection to node 1 (kafka1/10.0.0.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
 [2023-04-03 20:14:24,189] INFO [RaftManager nodeId=2] Node 3 disconnected. (org.apache.kafka.clients.NetworkClient)
@@ -54,6 +55,7 @@ Try to use `19092 for controllers 9092 for brokers`
 
 AGAIN
 
+[source, logs]
 ----
 root@kafka2:/home/vagrant# kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka2:9092
 [2023-04-04 19:34:20,017] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka2/127.0.2.1:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
@@ -171,7 +173,7 @@ vagrant@kafka2:~$ echo $?
 ----
 
 
-== Hypothese #1: I have to use same 'KAFKA_CLUSTER_ID' across all nodes
+== Hypothese #1: I have to use the same 'KAFKA_CLUSTER_ID' for all nodes (yes)
 
 I'm getting `INCONSISTENT_CLUSTER_ID`.
 
@@ -190,6 +192,8 @@ sudo echo "export KAFKA_CLUSTER_ID=${KAFKA_CLUSTER_ID}" >> /etc/profile
 
 kafka-storage.sh format -t ${KAFKA_CLUSTER_ID} -c /opt/kafka/config/kraft/server.properties
 ----
+
+It works.
 
 ----
 vagrant@kafka2:~$ kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
@@ -214,3 +218,5 @@ vagrant@kafka2:~$ kafka-topics.sh --create --topic kraft-test2 --partitions 3 --
 Created topic kraft-test2.
 vagrant@kafka2:~$
 ----
+
+I got `Unable to replicate the partition 3 time(s):` the first time. I restarted kafka on `kafka3`. Topic `kraft-test2` is replicated for all 3 nodes.
