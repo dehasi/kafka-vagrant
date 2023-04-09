@@ -239,6 +239,16 @@ That's why I have command to replace `KAFKA_HOST` with the actual host name
 sed -i 's/KAFKA_HOST/kafka1/g' /opt/kafka/config/kraft/server.properties
 ----
 
+*Result:* It works. I was able to create a kafka topic
+
+----
+vagrant@kafka3:~$ sudo service kafka restart
+vagrant@kafka3:~$ kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
+Created topic kraft-test.
+vagrant@kafka3:~$ kafka-topics.sh --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092 --list
+kraft-test
+----
+
 === Don't touch `/etc/hosts`
 
 Check if it can work without removing `kafkaN` hostname for `127.0.0.1`
@@ -247,7 +257,9 @@ Check if it can work without removing `kafkaN` hostname for `127.0.0.1`
 
 [source, bash]
 ----
+sudo service kafka restart
 kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
 kafka-topics.sh --create --topic kraft-test --partitions 1 --replication-factor 1 --bootstrap-server kafka1:9092
+kafka-topics.sh --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092 --list
 kafka-topics.sh --bootstrap-server kafka1:9092 --list
 ----
