@@ -1,4 +1,5 @@
 = Brokers can't connect to each other
+:toc:
 
 *Instruction:* https://redpanda.com/guides/kafka-tutorial/kafka-without-zookeeper
 
@@ -170,8 +171,46 @@ vagrant@kafka2:~$ echo $?
 ----
 
 
+== Hypothese #1: I have to use same 'KAFKA_CLUSTER_ID' across all nodes
+
+I'm getting `INCONSISTENT_CLUSTER_ID`.
 
 ----
 [2023-04-08 20:10:47,402] ERROR [RaftManager nodeId=3] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=2271, data=VoteResponseData(errorCode=104, topics=[]), sourceId=2) (org.apache.kafka.raft.KafkaRaftClient)
 [2023-04-08 20:10:47,403] ERROR [RaftManager nodeId=3] Unexpected error INCONSISTENT_CLUSTER_ID in VOTE response: InboundResponse(correlationId=2270, data=VoteResponseData(errorCode=104, topics=[]), sourceId=1) (org.apache.kafka.raft.KafkaRaftClient)
+----
+
+
+I'll try to set same `KAFKA_CLUSTER_ID` for all three nodes.
+
+[source, bash]
+----
+KAFKA_CLUSTER_ID='1IhHW8KOTOeZKvDOdUqB8Q'
+sudo echo "export KAFKA_CLUSTER_ID=${KAFKA_CLUSTER_ID}" >> /etc/profile
+
+kafka-storage.sh format -t ${KAFKA_CLUSTER_ID} -c /opt/kafka/config/kraft/server.properties
+----
+
+----
+vagrant@kafka2:~$ kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
+Error while executing topic command : Unable to replicate the partition 3 time(s): The target replication factor of 3 cannot be reached because only 2 broker(s) are registered.
+[2023-04-09 13:13:56,390] ERROR org.apache.kafka.common.errors.InvalidReplicationFactorException: Unable to replicate the partition 3 time(s): The target replication factor of 3 cannot be reached because only 2 broker(s) are registered.
+ (kafka.admin.TopicCommand$)
+vagrant@kafka2:~$ kafka-topics.sh --create --topic kraft-test --partitions 1 --replication-factor 1 --bootstrap-server kafka1:9092
+Created topic kraft-test.
+vagrant@kafka2:~$ kafka-topics.sh --bootstrap-server kafka1:9092 --list
+kraft-test
+vagrant@kafka2:~$ kafka-topics.sh --bootstrap-server kafka3:9092 --list
+[2023-04-09 13:18:04,886] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-09 13:18:04,993] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-09 13:18:05,097] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-09 13:18:05,302] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-09 13:18:05,709] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-09 13:18:06,439] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+[2023-04-09 13:18:07,456] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka3/10.0.0.3:9092) could not be established. Broker may not be available. (org.apache.kafka.clients.NetworkClient)
+^C^Cvagrant@kafka2:~$ kafka-topics.sh --bootstrap-server kafka3:9092 --list
+kraft-test
+vagrant@kafka2:~$ kafka-topics.sh --create --topic kraft-test2 --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
+Created topic kraft-test2.
+vagrant@kafka2:~$
 ----
