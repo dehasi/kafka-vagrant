@@ -238,3 +238,13 @@ That's why I have command to replace `KAFKA_HOST` with the actual host name
 ----
 sed -i 's/KAFKA_HOST/kafka1/g' /opt/kafka/config/kraft/server.properties
 ----
+
+
+== Kafka commands
+
+[source, bash]
+----
+kafka-topics.sh --create --topic kraft-test --partitions 3 --replication-factor 3 --bootstrap-server kafka1:9092 kafka2:9092 kafka3:9092
+kafka-topics.sh --create --topic kraft-test --partitions 1 --replication-factor 1 --bootstrap-server kafka1:9092
+kafka-topics.sh --bootstrap-server kafka1:9092 --list
+----
