@@ -239,6 +239,9 @@ That's why I have command to replace `KAFKA_HOST` with the actual host name
 sed -i 's/KAFKA_HOST/kafka1/g' /opt/kafka/config/kraft/server.properties
 ----
 
+=== Don't touch `/etc/hosts`
+
+Check if it can work without removing `kafkaN` hostname for `127.0.0.1`
 
 == Kafka commands
 
